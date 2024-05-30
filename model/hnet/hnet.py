@@ -25,8 +25,6 @@ from model.hnet.eval_utils import classification_array_plot, per_vertebra_plot, 
     dict_contains_vertebra, plot_landmarks
 
 
-
-
 class HNetVersion(EBC):
     def __init__(self, exe_path: str, version_no: int, licensed_to_mac: str):
         self.exe_path = exe_path
@@ -130,8 +128,8 @@ class HNet(ImageProcessingTool):
         self.evaluation_settings = evaluation_settings
         if results_dir is None:
             results_dir = os.path.join(tempfile.mkdtemp(), self.name())
-        self.tmp_results_dir = results_dir
-        os.makedirs(self.tmp_results_dir, exist_ok=True)
+        self.results_dir = results_dir
+        os.makedirs(self.results_dir, exist_ok=True)
         if model_version is None:
             for v in hnet_versions:
                 if os.path.basename(v.exe_path) == os.path.basename(model_exe_path):
@@ -146,16 +144,15 @@ class HNet(ImageProcessingTool):
         return os.path.basename(self.model_exe_path)
 
     def cleanup(self):
-        shutil.rmtree(self.tmp_results_dir)
+        shutil.rmtree(self.results_dir)
 
     def using_predicted_coordinates(self, iml):
         return UsingPredictedCoordinates(iml, self.name(), on_new_coordinates='add', on_missing_coordinates='invalidate')
 
-    def evaluate_on_iml(self, iml: ImageList):
-        EXCLUDED_VERTEBRAE = []
-        results_path = self.tmp_results_dir
+    def evaluate(self, iml: ImageList):
+        results_path = self.results_dir
         print('# Results path:', results_path)
-        self.predict_on_iml(iml)  # prediction is needed for the evaluation
+        self.predict(iml)  # prediction is needed for the evaluation
         print('Loading labels...')
         labels = self.load_vertebra_centers(iml)
         all_vertebrae = []
@@ -585,7 +582,10 @@ class HNet(ImageProcessingTool):
 
     def predict_on_single_image(self, img: Image) -> dict:
         input_file = str(img.path)
+        input_file = self.infer_nii_path_if_necessary(input_file)
+
         nii_filename = os.path.basename(input_file)
+
         result_name = self.result_name_for_input(nii_filename)
         tool = self.model_exe_path
         command = [os.path.abspath(tool), os.path.abspath(input_file), os.path.abspath(result_name)]
@@ -601,8 +601,8 @@ class HNet(ImageProcessingTool):
                 print(json_result_path, 'already exists. Using the existing file.')
             else:
                 call_tool(command, force_cpu=True, cwd=os.path.abspath(os.path.dirname(os.path.dirname(tool))))
-        except CalledProcessError:
-            print(CalledProcessError)
+        except CalledProcessError as e:
+            print(e)
             print('Ignoring a failed process call and dumping empty json file..')
             with open(json_result_path, 'w') as f:
                 json.dump({}, f)
@@ -630,7 +630,7 @@ class HNet(ImageProcessingTool):
         return outputs
 
     def result_name_for_input(self, nii_filename):
-        result_name = os.path.join(self.tmp_results_dir, os.path.basename(nii_filename))
+        result_name = os.path.join(self.results_dir, os.path.basename(nii_filename))
         assert result_name.endswith('.nii.gz')
         result_name = result_name[:-len('.nii.gz')]
         return result_name

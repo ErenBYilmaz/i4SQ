@@ -12,7 +12,7 @@ def call_tool_with_cache(command):
     return call_tool(command)
 
 
-def call_tool(command, force_cpu=False, cwd=None, verbose=True):
+def call_tool(command, force_cpu=False, cwd=None, verbose=True) -> str:
     try:
         if verbose:
             logging.info(f'Calling `{" ".join(command)}`...')
