@@ -15,6 +15,10 @@ def main():
     copy_paths_relative = [
         'model/fnet',
         'model/ensemble',
+        'hiwi',
+        'load_data',
+        'tasks.py',
+        'lib',
     ]
     with open('.gitignore', 'w') as f:
         extra_ignores = ['.gitignore', '__pycache__', '.idea', 'old']
@@ -29,8 +33,16 @@ def main():
         if os.path.exists(out_name):
             bak_name = prepare_relative_output_dir(copy_to_dir, f'old/{p}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}')
             shutil.move(out_name, bak_name)
-        assert not os.path.exists(out_name)
+        copy_file_or_dir(in_dir, out_name)
+
+
+def copy_file_or_dir(in_dir, out_name):
+    assert not os.path.exists(out_name)
+    if os.path.isdir(in_dir):
         shutil.copytree(in_dir, out_name)
+    else:
+        assert os.path.isfile(in_dir)
+        shutil.copy(in_dir, out_name)
 
 
 def prepare_relative_output_dir(copy_to_dir, p) -> str:
