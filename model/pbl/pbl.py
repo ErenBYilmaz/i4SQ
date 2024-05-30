@@ -78,7 +78,6 @@ class PBL(HNet):
                 print(pbl_output_vertebrae)
                 raise NotImplementedError('TODO write json in same format as hNet')
         except CalledProcessError:
-            raise  # TODO remove this line
             print(CalledProcessError)
             print('Ignoring a failed process call and dumping empty json file..')
             with open(json_result_path, 'w') as f:
