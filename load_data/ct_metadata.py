@@ -16,7 +16,6 @@ from PIL import Image, TiffTags
 from ct_dirs import CRF_DIR, THREE_DCPM_DIR, NIFTI_OUTPUT_DIR, TIFF_DIR, EXCEL_FILE
 from lib.util import dicom_metadata_from_image
 from load_data.table_data import excel_data, excel_panda, PatientNotFoundError, csv_data
-from train_test_split import use_other_tiff_file, patient_number_from_long_string, actually_osteoporotic
 from image_types import is_mhd_file, is_dcm_file
 
 metadata_cache = TunedMemory(location='./.cache/metadata', verbose=0)
@@ -304,7 +303,7 @@ def metadata_dict_from_image(image: SimpleITK.Image) -> dict:
 if __name__ == '__main__':
     # noinspection PyBroadException
     from load_data.image_files_for_ct import image_files_for_ct
-    from train_test_split import CLEAN_CT_DIRS
+    from train_test_split import CLEAN_CT_DIRS, use_other_tiff_file, patient_number_from_long_string, actually_osteoporotic
 
     one_image_file = image_files_for_ct([CLEAN_CT_DIRS[0]])[CLEAN_CT_DIRS[0]][0]
     m = metadata(one_image_file, ignore=['PixelData', 'pixel_array', 'crf', '3dcpm', 'tiff'])
