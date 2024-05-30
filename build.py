@@ -2,8 +2,8 @@ import os.path
 import shutil
 import datetime
 
-FRACTURES_PATH = r'D:\eren\Software\Fractures'
-SPINETEAM_DATA_PATH = r'C:\Users\sukin692\PycharmProjects\spineteam-data'
+FRACTURES_PATH = r'C:\Users\Eren\Programme\Fractures'
+SPINETEAM_DATA_PATH = r'C:\Users\Eren\Programme\spineteam-data'
 
 
 def main():

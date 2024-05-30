@@ -22,6 +22,7 @@ from model.fnet.evaluate import FNetParameterEvaluator
 from model.fnet.fnet import FNet
 from model.fnet.model_analysis.analyze_trained_models import split_name
 from model.hnet.hnet import HNet, hnet_by_version
+from model.hnet_fnet.fracture_evaluation import classify_fractures, coords_from_iml, metric_summary
 from tasks import VertebraTasks, BinaryClassificationTask
 
 
@@ -37,7 +38,6 @@ class HNetFNetPipeline(ImageProcessingPipeline):
         return 'HNetFNetPipeline'
 
     def evaluate_whole_pipeline(self, iml_with_intermediate_predictions_and_evaluations: ImageList):
-        from model.hnet_fnet.fracture_evaluation import classify_fractures, coords_from_iml
         if self.whole_pipeline_evaluation_task_name is None:
             logging.info('Cannot evaluate whole pipeline, no task name given')
             return
@@ -358,8 +358,6 @@ class MaskCreator:
 
 @main_wrapper
 def main():
-    from model.fnet.data_source import TraumaDataSource
-    from model.hnet_fnet.fracture_evaluation import metric_summary
     skip_existing = True
     whole_results_table = []
     for task_name in ['hufo', 'hafo']:

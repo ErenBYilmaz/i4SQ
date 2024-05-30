@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 from subprocess import CalledProcessError
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 import numpy
 import pandas
@@ -26,7 +26,7 @@ from model.hnet.eval_utils import classification_array_plot, per_vertebra_plot, 
 
 
 class HNetVersion(EBC):
-    def __init__(self, exe_path: str, version_no: int, licensed_to_mac: Optional[str]):
+    def __init__(self, exe_path: str, version_no: int, licensed_to_mac: str):
         self.exe_path = exe_path
         self.version_no = version_no
         self.licensed_to_mac = licensed_to_mac
@@ -40,7 +40,6 @@ hnet_versions: List[HNetVersion] = [
     HNetVersion(HNET_BASE_PATH + "/2021-10-05-uksh-spine/dllTest/transfer_uksh_20211005.exe", 5, 'a85e455c74f0'),  # currently best / Eren's Favourite
     # version 6 was skipped, would have been 2021-10-19-uksh-spine
     HNetVersion(HNET_BASE_PATH + "/2022-10-28-uksh-spine/dllTest/transfer_uksh_20221028.exe", 7, 'd8cb8a6fd5ec'),
-    HNetVersion("./models/pbl/model_2020_01_23.pbl", 8, None),
 ]
 
 
@@ -136,9 +135,9 @@ class HNet(ImageProcessingTool):
                 if os.path.basename(v.exe_path) == os.path.basename(model_exe_path):
                     model_version = v.version_no
                     break
-            else:
-                raise ValueError(
-                    f"model_version {model_version} not found in `versions` variable. You can specify it there or in the constructor parameters explicitly with HNet(model_exe_path, model_version)")
+        else:
+            raise ValueError(
+                f"model_version {model_version} not found in `versions` variable. You can specify it there or in the constructor parameters explicitly with HNet(model_exe_path, model_version)")
         self.model_version = model_version
 
     def name(self) -> str:

@@ -39,11 +39,10 @@ class PBL(HNet):
     def predict_on_single_image(self, img: Image) -> dict:
         pbl_model_path = self.model_exe_path
         input_path = str(img.path)
-        command = ["pbl", "test", "--output-dir", "log/pbl-outputs", pbl_model_path, input_path]
+        command = ["python", "-m", "pbl.pbl", "test", "--output-dir", "log/pbl-outputs", pbl_model_path, input_path]
         nii_filename = os.path.basename(input_path)
         result_name = self.result_name_for_input(nii_filename)
         tool = self.model_exe_path
-        command = [os.path.abspath(tool), os.path.abspath(input_path), os.path.abspath(result_name)]
 
         ext = '.nii.gz'
         assert input_path.endswith(ext)
