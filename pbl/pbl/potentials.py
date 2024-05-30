@@ -33,7 +33,7 @@ import numpy as np
 import pyopencl as cl
 import rfl
 import SimpleITK as sitk
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import time
 
 from abc import ABC, ABCMeta, abstractmethod

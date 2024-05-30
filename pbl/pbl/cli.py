@@ -31,7 +31,7 @@ import SimpleITK as sitk
 import subprocess
 import sys
 import tabulate
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from collections import OrderedDict
 from datetime import datetime

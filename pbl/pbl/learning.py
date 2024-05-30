@@ -38,7 +38,7 @@ import logging
 import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import threading
 import time
 

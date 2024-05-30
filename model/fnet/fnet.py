@@ -5,6 +5,7 @@ import random
 from copy import deepcopy
 from typing import List, Union, ContextManager, Callable, Dict, Any, Optional, Tuple, Type
 
+import cachetools
 import numpy
 import tensorflow
 from tensorflow.keras import Model
@@ -135,18 +136,27 @@ class FNet(TrainableImageProcessingTool):
         with open(save_path + '.json', 'w') as outfile:
             json.dump(config, outfile, indent=2)
 
+    @cachetools.cached(cachetools.LRUCache(maxsize=1), key=lambda self: self.model_path)
+    def load_tasks_for_evaluation(self):
+        model, config = self.load_tf_model_and_config(self.model_path + '.h5')
+        tasks = VertebraTasks.load_from_config(config)
+        return tasks
+
     def predict_on_single_image(self, img: Image) -> dict:
         iml = ImageList([img])
         with self.use_coordinates(iml):
             tasks = self.tasks
             model, config = self.model, self.config
             evaluator = FNetParameterEvaluator(ImageListDataSource(iml, self.dataset_subdir_name(iml), num_dims=3))
+            evaluator.configure(config)
 
             try:
-                data_generator = evaluator.prediction_generator_from_config(iml, config, tasks=tasks, ndim=evaluator.data_source.ndim())
+                data_generator = evaluator.prediction_generator_from_config(iml, evaluator.config, tasks=tasks, ndim=evaluator.data_source.ndim())
             except AnnotatedPatchesGenerator.EmptyDataset:
                 assert len([v for v in img.parts if img.parts[v].position is not None]) == 0
-                return {task.output_layer_name(): [] for task in tasks}
+                result = {task.output_layer_name(): [] for task in tasks}
+                result['names'] = []
+                return result
             assert data_generator.steps_per_epoch() == 1
             assert data_generator.num_samples() == len([v for v in img.parts if img.parts[v].position is not None])
             y_preds = model.predict(data_generator, steps=data_generator.steps_per_epoch())

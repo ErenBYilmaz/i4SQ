@@ -346,6 +346,7 @@ class KerasModelBuilder(metaclass=ABCMeta):
                           RandomBlur2D,
                           SqueezeExciteBlock, ]
         }
+        custom_layers['RandomRotation'] = RandomRotation3D # backwards compatibility
         return custom_layers
 
 

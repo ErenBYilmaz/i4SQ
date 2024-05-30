@@ -135,9 +135,9 @@ class HNet(ImageProcessingTool):
                 if os.path.basename(v.exe_path) == os.path.basename(model_exe_path):
                     model_version = v.version_no
                     break
-        else:
-            raise ValueError(
-                f"model_version {model_version} not found in `versions` variable. You can specify it there or in the constructor parameters explicitly with HNet(model_exe_path, model_version)")
+            else:
+                raise ValueError(
+                    f"model_version {model_version} not found in `versions` variable. You can specify it there or in the constructor parameters explicitly with HNet(model_exe_path, model_version)")
         self.model_version = model_version
 
     def name(self) -> str:

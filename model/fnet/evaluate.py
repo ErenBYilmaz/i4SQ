@@ -17,7 +17,6 @@ from lib.callbacks import AnyCallback, TerminateOnNaN, CallbackList
 from lib.image_processing_tool import TrainableImageProcessingTool
 from lib.my_logger import logging
 from lib.parameter_search import EvaluationResult, InvalidParametersError, Prediction
-from lib.print_exc_plus import print_exc_plus
 from lib.print_time_after_each_epoch import PrintTimeAfterEachEpoch
 from lib.util import Z, Y, X, EBC, all_sets_and_disjoint
 from lib.wandb_interface import WandBRunInterface
@@ -205,9 +204,11 @@ class FNetParameterEvaluator(EBC):
             })
 
     # noinspection PyAttributeOutsideInit
-    def configure(self, config):
+    def configure(self, config: Dict[str, Any]):
         self.original_parameters = config.copy()
         self.config = config.copy()
+        if 'conv_ndim' not in self.config:
+            self.config['conv_ndim'] = 3  # backwards compatibility
         self.tasks = VertebraTasks.load_from_config(config)
         self.hu_window = self.hu_window_from_config(config)
         HyperparameterSet.validate_swa_parameters(self.config)

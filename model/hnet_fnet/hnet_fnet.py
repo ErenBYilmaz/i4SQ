@@ -102,12 +102,15 @@ class MaskCreator:
         self.plot_using_pyplot(s_img, tmp_mask_path)
         tmp_pdf_path = tmp_mask_path.replace('.png', '.pdf')
         self.png_to_pdf(tmp_mask_path, tmp_pdf_path)
-        self.pdf_to_dcm(tmp_pdf_path, self.some_dcm_slice(self.base_dcm_path()), suffix='.pdf.dcm')
+        dcm_present = len(self.dcm_paths(self.base_dcm_path())) > 0
+        if dcm_present:
+            self.pdf_to_dcm(tmp_pdf_path, self.some_dcm_slice(self.base_dcm_path()), suffix='.pdf.dcm')
         mask = self.binarize_pyplot_to_mask(tmp_mask_path)
         mask = self.resize_and_mark_corner(mask, s_img)
         mask_img = self.mask_to_image(mask, s_img)
         self.save_as_nii(mask_img, to_nii_path)
-        self.nii_to_dcm_seg(to_nii_path, self.base_dcm_path(), to_dcm_seg_path=to_nii_path.replace('.nii.gz', '.dcm'))
+        if dcm_present:
+            self.nii_to_dcm_seg(to_nii_path, self.base_dcm_path(), to_dcm_seg_path=to_nii_path.replace('.nii.gz', '.dcm'))
 
     def png_to_pdf(self, png_path, pdf_path):
         img = PIL.Image.open(png_path)
@@ -234,7 +237,8 @@ class MaskCreator:
             pyplot.text(y + text_pad_px[ha], z, s, color='black', fontdict={'size': 48}, transform=IdentityTransform(), ha=ha, va='center')
             plot_xy.append((y, z))
             ha = other[ha]  # alternate left and right plotting
-        pyplot.scatter(*zip(*plot_xy), color='black', s=64, transform=IdentityTransform(), clip_on=False)
+        if len(plot_xy) > 0:
+            pyplot.scatter(*zip(*plot_xy), color='black', s=64, transform=IdentityTransform(), clip_on=False)
         # save the plot to the results directory
         pyplot.savefig(tmp_mask_path, bbox_inches=0)
         pyplot.close()
