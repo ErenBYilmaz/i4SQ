@@ -285,12 +285,12 @@ class VertebraTask(EBC, ABC):
 
     def metrics_as_tuples(self, include_output_name):
         return [
-            (self.output_layer_name() + '_' + n, nn, wv) if include_output_name else (n, nn, wv)
-            for n, nn, wv in zip(self.metrics_names(), self.natural_metrics_names(), self.worst_metric_values())
-        ] + [
-            (self.output_layer_name() + '_' + n, nn, wv) if include_output_name else (n, nn, wv)
-            for n, nn, wv in zip(self.weighted_metrics_names(), self.natural_weighted_metrics_names(), self.worst_weighted_metric_values())
-        ]
+                   (self.output_layer_name() + '_' + n, nn, wv) if include_output_name else (n, nn, wv)
+                   for n, nn, wv in zip(self.metrics_names(), self.natural_metrics_names(), self.worst_metric_values())
+               ] + [
+                   (self.output_layer_name() + '_' + n, nn, wv) if include_output_name else (n, nn, wv)
+                   for n, nn, wv in zip(self.weighted_metrics_names(), self.natural_weighted_metrics_names(), self.worst_weighted_metric_values())
+               ]
 
     @staticmethod
     def with_additional_spatial_dimensions(result, n_spatial_dims):
@@ -1401,40 +1401,6 @@ class OutputCombination(VertebraTask):
 
 
 class BinaryOutputCombination(MulticlassVertebraTask, OutputCombination):
-    class CombinedLayer(Layer):
-        def __init__(self, combination, clauses, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.combination = combination
-            self.clauses = clauses
-
-        def call(self, inputs, *args, **kwargs):
-            outputs_for_cls = []
-            for cls_idx in range(self.combination.num_classes()):
-                to_stack = []
-                for tsk_idx in self.clauses[cls_idx]:
-                    if self.combination.thresholds_for_binary_outputs is None:
-                        threshold = 0.5
-                    else:
-                        task_name = self.combination.binary_tasks[tsk_idx].output_layer_name()
-
-                        threshold = self.combination.thresholds_for_binary_outputs[task_name]
-                        if threshold is None:
-                            threshold = 0.5
-                    to_stack.append((inputs[tsk_idx] >= threshold) == self.clauses[cls_idx][tsk_idx])
-
-                stacked = tensorflow.keras.backend.stack(to_stack, axis=-1)
-                outputs_for_cls.append(tensorflow.reduce_all(stacked, axis=-1))
-            output = tensorflow.keras.backend.concatenate(outputs_for_cls, axis=-1)
-            # assert_sum_to_1 = tensorflow.debugging.assert_near(1., tensorflow.reduce_sum(tensorflow.cast(output, tensorflow.keras.backend.floatx()), axis=-1))
-            # with tensorflow.control_dependencies([assert_sum_to_1]):
-            output = tensorflow.keras.backend.cast(output, tensorflow.keras.backend.floatx())
-            return output
-
-        def get_config(self):
-            config = {attr: getattr(self, attr) for attr in ['combination', 'clauses']}
-            base_config = super().get_config()
-            return dict(list(base_config.items()) + list(config.items()))
-
     def output_layer_name(self) -> str:
         return self.name
 
@@ -1484,10 +1450,34 @@ class BinaryOutputCombination(MulticlassVertebraTask, OutputCombination):
         for c in clauses.values():
             assert len(c) > 0, clauses
 
+        class CombinedLayer(Layer):
+            def call(self, inputs, *args, **kwargs):
+                outputs_for_cls = []
+                for cls_idx in range(combination.num_classes()):
+                    to_stack = []
+                    for tsk_idx in clauses[cls_idx]:
+                        if combination.thresholds_for_binary_outputs is None:
+                            threshold = 0.5
+                        else:
+                            task_name = combination.binary_tasks[tsk_idx].output_layer_name()
+
+                            threshold = combination.thresholds_for_binary_outputs[task_name]
+                            if threshold is None:
+                                threshold = 0.5
+                        to_stack.append((inputs[tsk_idx] >= threshold) == clauses[cls_idx][tsk_idx])
+
+                    stacked = tensorflow.keras.backend.stack(to_stack, axis=-1)
+                    outputs_for_cls.append(tensorflow.reduce_all(stacked, axis=-1))
+                output = tensorflow.keras.backend.concatenate(outputs_for_cls, axis=-1)
+                # assert_sum_to_1 = tensorflow.debugging.assert_near(1., tensorflow.reduce_sum(tensorflow.cast(output, tensorflow.keras.backend.floatx()), axis=-1))
+                # with tensorflow.control_dependencies([assert_sum_to_1]):
+                output = tensorflow.keras.backend.cast(output, tensorflow.keras.backend.floatx())
+                return output
+
         if self.thresholds_for_binary_outputs is not None:
             for task in self.binary_tasks:
                 assert task.output_layer_name() in self.thresholds_for_binary_outputs
-        return self.CombinedLayer(name=self.output_layer_name(), combination=combination, clauses=clauses)(inputs)
+        return CombinedLayer(name=self.output_layer_name())(inputs)
 
     def patient_level_aggregation(self, y_pred_or_y_true: numpy.ndarray) -> numpy.ndarray:
         above_1 = numpy.sum(y_pred_or_y_true * [0, 1, 2, 3], axis=(0, 1)) >= 2
@@ -1750,22 +1740,6 @@ class DifferentialDiagnosisCategoryClassification(MulticlassVertebraTask):
 
 
 class GenantByDeformity(GenantScoreRegression, OutputCombination):
-    class DeformityToGenantScore(Layer):
-        def call(self, inputs, *args, training=False, **kwargs):
-            if len(inputs) != 1:
-                raise ValueError(inputs)
-            deformity = inputs[0]
-            above_thresholds = [
-                tensorflow.keras.backend.max(deformity, axis=-1) >= 0.2,
-                tensorflow.keras.backend.max(deformity, axis=-1) >= 0.25,
-                tensorflow.keras.backend.max(deformity, axis=-1) >= 0.4,
-            ]
-            above_thresholds = tensorflow.keras.backend.cast(above_thresholds, tensorflow.keras.backend.floatx())
-            along_thresholds = 0
-            output = tensorflow.keras.backend.sum(above_thresholds, axis=along_thresholds)
-            output = output[..., tensorflow.newaxis]
-            return output
-
     def __init__(self, deformity_as_zero: bool):
         super().__init__(1.0, deformity_as_zero)
 
@@ -1782,4 +1756,20 @@ class GenantByDeformity(GenantScoreRegression, OutputCombination):
         if len(inputs) != 1:
             raise ValueError(inputs)
 
-        return self.DeformityToGenantScore(name=self.output_layer_name())(inputs)
+        class DeformityToGenantScore(Layer):
+            def call(self, inputs, *args, training=False, **kwargs):
+                if len(inputs) != 1:
+                    raise ValueError(inputs)
+                deformity = inputs[0]
+                above_thresholds = [
+                    tensorflow.keras.backend.max(deformity, axis=-1) >= 0.2,
+                    tensorflow.keras.backend.max(deformity, axis=-1) >= 0.25,
+                    tensorflow.keras.backend.max(deformity, axis=-1) >= 0.4,
+                ]
+                above_thresholds = tensorflow.keras.backend.cast(above_thresholds, tensorflow.keras.backend.floatx())
+                along_thresholds = 0
+                output = tensorflow.keras.backend.sum(above_thresholds, axis=along_thresholds)
+                output = output[..., tensorflow.newaxis]
+                return output
+
+        return DeformityToGenantScore(name=self.output_layer_name())(inputs)
