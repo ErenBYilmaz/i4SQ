@@ -90,7 +90,7 @@ def show_logs(level: int = logging.INFO,
 
     if silence_tensorflow:
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # ignore warning and below
-        import tensorflow as tf
+        import tensorflow.compat.v1 as tf
         tf.logging.set_verbosity(tf.logging.ERROR)
 
     if silence_matplotlib:

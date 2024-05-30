@@ -4,6 +4,9 @@ import re
 from subprocess import CalledProcessError
 from typing import List, Dict, Any
 
+import SimpleITK
+import numpy
+
 from hiwi import Image
 from lib.call_tool import call_tool
 from model.hnet.hnet import HNet
@@ -36,10 +39,28 @@ def parse_pbl_output(pbl_output):
 
 
 class PBL(HNet):
+    def nii_to_pbl_spacing(self, nii_file_path: str, spaced_path: str):
+        s_image = SimpleITK.ReadImage(nii_file_path)
+        pbl_required_spacing = (1.5, 1.5, 1.5)
+        scaling = numpy.array(s_image.GetSpacing()) / 1.5
+        r = SimpleITK.ResampleImageFilter()
+        r.SetInterpolator(SimpleITK.sitkBSpline)
+        r.SetOutputSpacing(pbl_required_spacing)
+        r.SetOutputDirection(s_image.GetDirection())
+        r.SetSize(numpy.ceil(s_image.GetSize() * scaling).astype(int).tolist())
+        physical_origin = s_image.TransformContinuousIndexToPhysicalPoint((0 + .5) / scaling - .5)
+        r.SetOutputOrigin(physical_origin)
+        s_image = r.Execute(s_image)
+        SimpleITK.WriteImage(s_image, spaced_path)
+
     def predict_on_single_image(self, img: Image) -> dict:
-        pbl_model_path = self.model_exe_path
+        pbl_model_path = os.path.abspath(self.model_exe_path)
         input_path = str(img.path)
-        command = ["python", "-m", "pbl.pbl", "test", "--output-dir", "log/pbl-outputs", pbl_model_path, input_path]
+        spaced_path = input_path.replace('.nii.gz', '_spaced.nii.gz')
+        self.nii_to_pbl_spacing(input_path, spaced_path)
+
+        input_path = os.path.abspath(spaced_path)
+        command = ["python", "-m", "pbl", "test", "--output-dir", "log/pbl-outputs", pbl_model_path, input_path]
         nii_filename = os.path.basename(input_path)
         result_name = self.result_name_for_input(nii_filename)
         tool = self.model_exe_path
@@ -54,8 +75,10 @@ class PBL(HNet):
             else:
                 tool_output = call_tool(command, force_cpu=True, cwd=os.path.abspath(os.path.dirname(os.path.dirname(tool))))
                 pbl_output_vertebrae = parse_pbl_output(tool_output)
+                print(pbl_output_vertebrae)
                 raise NotImplementedError('TODO write json in same format as hNet')
         except CalledProcessError:
+            raise  # TODO remove this line
             print(CalledProcessError)
             print('Ignoring a failed process call and dumping empty json file..')
             with open(json_result_path, 'w') as f:

@@ -27,38 +27,38 @@ accessable via the `potentials` attribute) that uses a simple convolutional
 neural network. These potentials are learnable.
 """
 
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pyopencl as cl
-import rfl
-import SimpleITK as sitk
-import tensorflow.compat.v1 as tf
 import time
-
 from abc import ABC, ABCMeta, abstractmethod
 from collections import deque
-from hiwi import Image, ImageList
-from hiwi import PatchExtractor, batchize, place_gaussian
-from hiwi import transform_elastically, LocalMaxLocator
-from humanfriendly import format_size, format_timespan
 from itertools import chain
 from logging import getLogger
 from multiprocessing import Pool as ProcessPool
 from numbers import Real
 from operator import methodcaller
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import SimpleITK as sitk
+import matplotlib.pyplot as plt
+import numpy as np
+import pyopencl as cl
+import rfl
+import tensorflow.compat.v1 as tf
+from humanfriendly import format_size, format_timespan
 from scipy import stats
 from scipy.spatial import distance
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
-from typing import Any, Dict, List, Optional, Tuple, Union
 
+from hiwi import Image, ImageList
+from hiwi import PatchExtractor, batchize, place_gaussian
+from hiwi import transform_elastically, LocalMaxLocator
 from .evaluation import Criterion, plot_results
 from .utils import working_dir
 
-
 log = getLogger(__name__)
+
+tf.disable_v2_behavior()
 
 
 class Potential(ABC):
@@ -372,6 +372,7 @@ class UnaryPotential(Potential, metaclass=ABCMeta):
     Args:
         part: The single part name.
     """
+
     def __init__(self, part: str, **kwargs):
         super().__init__([part], **kwargs)
 
@@ -582,7 +583,7 @@ class RteLocalizer(UnaryPotential):
                 if self.prepared_buffer is None:
                     self.prepared_buffer = cl.Buffer(
                         ocl.ctx, cl.mem_flags.READ_ONLY
-                        | cl.mem_flags.COPY_HOST_PTR,
+                                 | cl.mem_flags.COPY_HOST_PTR,
                         hostbuf=self.prepared_image)
 
                 values = np.empty(self.prepared_image.shape[:3], np.float32)
@@ -655,7 +656,7 @@ class DistancePotential(BinaryPotential, BasePotentialMixin):
         pos_a, pos_b = self.positions(images, self.use_mm, random_positions,
                                       max_distance)
 
-        distances = np.sqrt(np.sum((pos_a - pos_b)**2, axis=1))
+        distances = np.sqrt(np.sum((pos_a - pos_b) ** 2, axis=1))
 
         dist = stats.norm(np.mean(distances), np.std(distances))
 
@@ -676,7 +677,7 @@ class DistancePotential(BinaryPotential, BasePotentialMixin):
             pos_a = pos_a * spacing
             pos_b = pos_b * spacing
 
-        distance = np.sqrt(np.sum((pos_a - pos_b)**2,
+        distance = np.sqrt(np.sum((pos_a - pos_b) ** 2,
                                   axis=None if pos_a.ndim == 1 else 1))
 
         if self.SCALING is not None:
@@ -776,13 +777,13 @@ class AnglePotential(BinaryPotential, BasePotentialMixin):
 
         # estimate dist parameters given same samples
         r = np.sum(angles_uc, axis=0)
-        r2 = np.sqrt(np.sum(r**2))
+        r2 = np.sqrt(np.sum(r ** 2))
         r_ = r2 / len(angles)
 
         # the parameters of the von Mises distribution
         mu = r / r2
         mu = np.arctan2(mu[0], mu[1])
-        k = (r_*2 - r_**3) / (1 - r_**2)
+        k = (r_ * 2 - r_ ** 3) / (1 - r_ ** 2)
 
         # a to large kappa results in overflows in the exp function in the
         # pdf, thus we got to enforce an upper bound
@@ -1030,7 +1031,7 @@ class KdeVectorPotential(BinaryPotential, BasePotentialMixin):
         @working_dir.cache(self.name() + str(self.parts))
         def train():
             grid = GridSearchCV(KernelDensity(),
-                                {'bandwidth': 100**np.linspace(-1, 1, 500)},
+                                {'bandwidth': 100 ** np.linspace(-1, 1, 500)},
                                 cv=min(20, len(vectors)), iid=False)
             grid.fit(vectors)
 
@@ -1103,7 +1104,7 @@ class UnitVectorPotential(BinaryPotential):
                                       max_distance)
         vectors = pos_b - pos_a
 
-        magnitude = np.sqrt(np.sum(vectors**2, axis=1))
+        magnitude = np.sqrt(np.sum(vectors ** 2, axis=1))
         magnitude.shape = (magnitude.size, 1)
 
         vectors /= magnitude
@@ -1128,8 +1129,8 @@ class UnitVectorPotential(BinaryPotential):
 
         vector = pos_b - pos_a
 
-        magnitude = np.sqrt(np.sum(vector**2, axis=1 if vector.ndim == 2
-                                   else None))
+        magnitude = np.sqrt(np.sum(vector ** 2, axis=1 if vector.ndim == 2
+        else None))
         magnitude.shape = (magnitude.size, 1)
 
         magnitude[magnitude == 0] = 1
@@ -1174,8 +1175,8 @@ class DistanceRatioPotential(Potential):
                                              random_positions,
                                              max_distance)
 
-        distances_a = np.sqrt(np.sum((pos_a - pos_b)**2, axis=1))
-        distances_b = np.sqrt(np.sum((pos_b - pos_c)**2, axis=1))
+        distances_a = np.sqrt(np.sum((pos_a - pos_b) ** 2, axis=1))
+        distances_b = np.sqrt(np.sum((pos_b - pos_c) ** 2, axis=1))
 
         ratio = distances_a / distances_b
 
@@ -1195,9 +1196,9 @@ class DistanceRatioPotential(Potential):
             pos_b = pos_b * spacing
             pos_c = pos_c * spacing
 
-        distance_a = np.sqrt(np.sum((pos_a - pos_b)**2,
+        distance_a = np.sqrt(np.sum((pos_a - pos_b) ** 2,
                                     axis=None if pos_a.ndim == 1 else 1))
-        distance_b = np.sqrt(np.sum((pos_b - pos_c)**2,
+        distance_b = np.sqrt(np.sum((pos_b - pos_c) ** 2,
                                     axis=None if pos_a.ndim == 1 else 1))
 
         ratio = distance_a / distance_b
@@ -1253,13 +1254,13 @@ class RelativeAnglePotential(Potential):
 
         # estimate dist parameters given same samples
         r = np.sum(angles_uc, axis=0)
-        r2 = np.sqrt(np.sum(r**2))
+        r2 = np.sqrt(np.sum(r ** 2))
         r_ = r2 / len(angles)
 
         # the parameters of the von Mises distribution
         mu = r / r2
         mu = np.arctan2(mu[0], mu[1])
-        k = (r_*2 - r_**3) / (1 - r_**2)
+        k = (r_ * 2 - r_ ** 3) / (1 - r_ ** 2)
 
         # a to large kappa results in overflows in the exp function in the
         # pdf, thus we got to enforce an upper bound
@@ -1315,8 +1316,8 @@ def _compute_angle(vec1: np.ndarray, vec2: np.ndarray) \
         vec1 = np.array([vec1])
         vec2 = np.array([vec2])
 
-    l1 = np.sqrt(np.sum(vec1**2, axis=1))
-    l2 = np.sqrt(np.sum(vec2**2, axis=1))
+    l1 = np.sqrt(np.sum(vec1 ** 2, axis=1))
+    l2 = np.sqrt(np.sum(vec2 ** 2, axis=1))
 
     # FIXME: That's probably really slow, can we somewhat improve it?
     dot = np.array([np.dot(v1, v2) for v1, v2 in zip(vec1, vec2)])
@@ -1389,6 +1390,7 @@ class MultiPartCNN:
         dropout_rate: If given, uses dropout in training. Good value is
             within 0.2-0.5.
     """
+
     def __init__(self, session: tf.Session, parts: List[str], n_dims: int,
                  n_channels: int, input_shape: np.ndarray,
                  peak_finder: LocalMaxLocator,
@@ -1566,12 +1568,36 @@ class MultiPartCNN:
 
             return y
 
-        def batch_norm(x, scale=False):
-            return tf.contrib.layers.batch_norm(
-                x, data_format=data_format.replace('D', ''),
-                trainable=True, scale=scale,
-                is_training=self.is_training_tf,
-                variables_collections=['pbl_batch_norm_coll'])
+        def batch_norm(x, scale=False, name=None):
+            # with tf.variable_scope('pbl_batch_norm_coll'):
+            # return tensorflow.keras.layers.BatchNormalization(
+            #     name=name,
+            #     scale=scale,
+            #     trainable=True,
+            # )(x)
+            return tf.layers.batch_normalization(
+                name=name,
+                inputs=x,
+                training=self.is_training_tf,
+                # axis=-1,
+                scale=scale,
+                fused=True,
+                trainable=True,
+            )
+
+            # class CompatV1BatchNorm(tf.keras.layers.Layer):
+            #
+            #     # @tf.keras.utils.track_tf1_style_variables
+            #     def call(self, inputs, training=None):
+            #         with tf.variable_scope('pbl_batch_norm_coll'):
+            #             return tf.layers.batch_normalization(inputs, training=training)
+            #
+            # return CompatV1BatchNorm()(x)
+            # return tf.layers.batch_normalization(
+            #     x, data_format=data_format.replace('D', ''),
+            #     trainable=True, scale=scale,
+            #     is_training=self.is_training_tf,
+            #     variables_collections=['pbl_batch_norm_coll'])
 
         def conv(x, size, channels, final=False, stride=1, dilation=1):
             nonlocal layer, input_channels, downsampling
@@ -1635,27 +1661,27 @@ class MultiPartCNN:
                                           name='input')
 
                 # lazy data normation
-                output_tf = batch_norm(input_tf, scale=True)
+                output_tf = batch_norm(input_tf, scale=True, name='BatchNorm')
 
                 output_tf = conv(output_tf, 9, 128)
                 output_tf = max_pool(output_tf, 2, 2)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_1')
                 output_tf = conv(output_tf, 9, 128)
                 output_tf = max_pool(output_tf, 2, 2)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_2')
                 output_tf = conv(output_tf, 9, 128)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_3')
                 output_tf = conv(output_tf, 5, 32)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_4')
                 output_tf = conv(output_tf, 9, 128)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_5')
 
                 output_tf = conv(output_tf, 11, 128)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_6')
                 output_tf = conv(output_tf, 11, 128)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_7')
                 output_tf = conv(output_tf, 1, 512)
-                output_tf = batch_norm(output_tf)
+                output_tf = batch_norm(output_tf, name='BatchNorm_8')
 
                 # dropout should be placed after ALL batchnorm stuff!
                 # for spatial dropout define the noise_shape param
@@ -1677,7 +1703,7 @@ class MultiPartCNN:
                 if not channels_first:
                     output_tf = tf.transpose(
                         output_tf, perm=[0, self.n_dims + 1]
-                        + list(range(1, self.n_dims + 1)))
+                                        + list(range(1, self.n_dims + 1)))
 
                 # Gibbs measure to model probability distribution over
                 # image domain, we use log-sum-exp trick to prevent
@@ -1700,9 +1726,9 @@ class MultiPartCNN:
             self.input_tf = input_tf
             self.output_tf = output_tf
             self.normalized_output_tf = normalized_output_tf
-            self.trainables_tf = tf.trainable_variables('multipartcnn') \
-                + tf.get_collection('pbl_batch_norm_coll')
-            assert len(tf.get_collection('pbl_batch_norm_coll')) > 0
+            self.trainables_tf = tf.global_variables('multipartcnn') \
+                                 + tf.get_collection('pbl_batch_norm_coll')
+            # assert len(tf.get_collection('pbl_batch_norm_coll')) > 0
 
             self.weights_l2_tf = tf.reduce_sum(weights_l2)
 
@@ -1821,7 +1847,7 @@ class MultiPartCNN:
                        * self.downsampling).astype(int)
 
         padding = [(0, i - s) for i, s in zip(padded_size, input_.shape)] \
-            + [(0, 0)]
+                  + [(0, 0)]
         input_ = np.pad(input_, padding, mode='constant')
 
         if self.channels_first:
@@ -2217,9 +2243,9 @@ class MultiPartCNN:
                                 for image, potentials in reference_images:
                                     for pot in potentials:
                                         path = working_dir \
-                                            / (f'cnn_progress_{name}/'
-                                               + f'{iteration}/{pot}_'
-                                                 f'{image.name}.jpg')
+                                               / (f'cnn_progress_{name}/'
+                                                  + f'{iteration}/{pot}_'
+                                                    f'{image.name}.jpg')
                                         path.parent.mkdir(parents=True,
                                                           exist_ok=True)
                                         pot.plot_energies(image, path)
@@ -2382,6 +2408,7 @@ class GaussianVector(BinaryPotential, LearnablePotentialMixin,
 
 
     """
+
     def __init__(self, session, parts: List[str], n_dims: int = 2, plot=False,
                  **kwargs) -> None:
         super().__init__(parts, **kwargs)

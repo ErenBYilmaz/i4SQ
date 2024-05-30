@@ -11,7 +11,6 @@ import pandas
 import pydicom_seg
 from matplotlib import pyplot
 from matplotlib.transforms import IdentityTransform
-from pdf2dcm import Pdf2EncapsDCM
 
 from hiwi import ImageList, Image
 from lib.image_processing_tool import ImageProcessingPipeline
@@ -118,6 +117,11 @@ class MaskCreator:
         img.save(pdf_path, 'PDF', resolution=100.0)
 
     def pdf_to_dcm(self, pdf_path, template_dcm_path, suffix=".dcm"):
+        try:
+            from pdf2dcm import Pdf2EncapsDCM
+        except ImportError:
+            print('Cannot convert PDF to DICOM. Please install the pdf2dcm package.')
+            return
         converter = Pdf2EncapsDCM()
         converted_dcm = converter.run(path_pdf=pdf_path, path_template_dcm=template_dcm_path, suffix=suffix)
         print(converted_dcm)
@@ -172,7 +176,7 @@ class MaskCreator:
         a = SimpleITK.GetArrayFromImage(s_img)
         pixel_coordinates = self.vertebra_coordinates_from_img()  # z, y, x
 
-        tasks = self.pipeline.fnet.load_tasks_for_evaluation()
+        tasks = self.pipeline.fnet.tasks
         vertebra_annotations = {}
         fnet_output = self.img['tool_outputs'][self.pipeline.fnet.name()]
         for vertebra_idx, name in enumerate(fnet_output['names']):

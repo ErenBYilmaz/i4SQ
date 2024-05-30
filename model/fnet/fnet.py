@@ -40,7 +40,7 @@ class FNet(TrainableImageProcessingTool):
             model_path = model_path[:-len('.h5')]
         assert (model is None) == (config is None)
         if model is None:
-            model, config = self.load_tf_model_and_config(model_path + '.h5', )
+            model, config = self.load_tf_model_and_config(model_path + '.h5', include_artificial_outputs=False)
         super().__init__(config=config, tasks=tasks, model_path=model_path, validation_batch_size=1800)
         if use_coordinates == 'default':
             use_coordinates = lambda iml: contextlib.suppress()

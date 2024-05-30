@@ -37,11 +37,12 @@ from .learning import Sample, FixedGraphSample, LearnableGraphSample
 from .cli import main
 from .utils import working_dir
 
-
-# silence the annoying contrib warning!
-if type(tf.contrib) != type(tf):
-    tf.contrib._warning = None
-
+try:
+    # silence the annoying contrib warning!
+    if type(tf.contrib) != type(tf):
+        tf.contrib._warning = None
+except AttributeError:
+    pass
 
 load = Graph.load
 """Loads an existing `Graph` model from disk (or memory)."""

@@ -40,6 +40,7 @@ hnet_versions: List[HNetVersion] = [
     HNetVersion(HNET_BASE_PATH + "/2021-10-05-uksh-spine/dllTest/transfer_uksh_20211005.exe", 5, 'a85e455c74f0'),  # currently best / Eren's Favourite
     # version 6 was skipped, would have been 2021-10-19-uksh-spine
     HNetVersion(HNET_BASE_PATH + "/2022-10-28-uksh-spine/dllTest/transfer_uksh_20221028.exe", 7, 'd8cb8a6fd5ec'),
+    HNetVersion("./models/pbl/model_2020_01_23.pbl", 8, None),
 ]
 
 

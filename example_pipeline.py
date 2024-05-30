@@ -1,6 +1,8 @@
 import os
 
+import SimpleITK
 import cachetools
+import numpy
 import streamlit
 
 import hiwi
@@ -29,7 +31,7 @@ def pipeline() -> HNetFNetPipeline:
     )
 
 
-def run_pipeline_on_image_directory(patient_id, img_dir):
+def run_pipeline_on_image_directory(patient_id, img_dir: str):
     filenames = listdir_fullpath(img_dir)
     p = pipeline()
     file_extensions_present = set([os.path.splitext(f)[1] for f in filenames])
@@ -39,6 +41,7 @@ def run_pipeline_on_image_directory(patient_id, img_dir):
         streamlit.write('Please upload at least one file')
     else:
         ext = file_extensions_present.pop()
+        nii_file_path: str
         if ext == '.nii.gz':
             if len(filenames) > 1:
                 streamlit.write('Please upload only one nii.gz file at a time')
@@ -51,15 +54,16 @@ def run_pipeline_on_image_directory(patient_id, img_dir):
                          nifti_path=nii_file_path,
                          patient_id=patient_id)
         assert os.path.isfile(nii_file_path)
+
+
         print('Processing', nii_file_path)
         hiwi_image = hiwi.Image(path=nii_file_path)
-        hiwi_image['spacing'] = read_spacing_from_nii(nii_file_path)
+        hiwi_image['pbl_required_spacing'] = read_spacing_from_nii(nii_file_path)
         hiwi_image['base_dcm_path'] = os.path.dirname(nii_file_path)
         hiwi_image['patient_id'] = nii_file_path
         hiwi_image.objects = [hiwi.Object()]
 
         p.predict_on_single_image(hiwi_image)
-
 
 if __name__ == '__main__':
     run_pipeline_on_image_directory('20240530_190948', 'uploads/20240530_190948', )
