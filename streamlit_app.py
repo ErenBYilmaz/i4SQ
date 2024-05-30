@@ -6,7 +6,7 @@ import streamlit
 import example_pipeline
 import hiwi
 from dcm_to_nifti import dcm_to_nifti, read_spacing_from_nii
-from load_data.ct_metadata import metadata
+from dcm_to_nifti import metadata
 
 streamlit.title('i4SQ Demo')
 streamlit.write('This is a demo of the i4SQ tool within the context of the i4Reader toolbox.')

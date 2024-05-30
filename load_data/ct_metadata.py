@@ -15,6 +15,7 @@ from PIL import Image, TiffTags
 
 from ct_dirs import CRF_DIR, THREE_DCPM_DIR, NIFTI_OUTPUT_DIR, TIFF_DIR, EXCEL_FILE
 from lib.util import dicom_metadata_from_image
+from load_data.processing_utils import attr_dir, try_convert_to_number
 from load_data.table_data import excel_data, excel_panda, PatientNotFoundError, csv_data
 from image_types import is_mhd_file, is_dcm_file
 
@@ -52,15 +53,6 @@ def remove_other_methods(data: Dict[str, Dict[str, Any]], keep_method: str):
 
 class MissingTiffError(KeyError):
     pass
-
-
-def attr_dir(obj, include_methods=False, ignore=None):
-    if ignore is None:
-        ignore = []
-    return {attr: obj.__getattr__(attr)
-            for attr in dir(obj)
-            if not attr.startswith('_') and (
-                    include_methods or not callable(obj.__getattr__(attr))) and attr not in ignore}
 
 
 def case_by_idx(i: int):
@@ -259,33 +251,6 @@ def metadata(ct_file: str, ignore=None) -> Dict:
         'genant_2': genant_2,
         'genant_3': genant_3,
     }
-
-
-def try_convert_to_number(image_attrs):
-    for k in image_attrs:
-        if image_attrs[k] == 'False':
-            image_attrs[k] = False
-            continue
-        if image_attrs[k] == 'True':
-            image_attrs[k] = True
-            continue
-        if isinstance(image_attrs[k], list):
-            for idx in range(len(image_attrs[k])):
-                try:
-                    image_attrs[k][idx] = int(image_attrs[k][idx])
-                except ValueError:
-                    try:
-                        image_attrs[k][idx] = float(image_attrs[k][idx])
-                    except ValueError:
-                        pass
-        else:
-            try:
-                image_attrs[k] = int(image_attrs[k])
-            except ValueError:
-                try:
-                    image_attrs[k] = float(image_attrs[k])
-                except ValueError:
-                    pass
 
 
 def metadata_dict_from_image(image: SimpleITK.Image) -> dict:

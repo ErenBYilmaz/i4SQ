@@ -7,7 +7,7 @@ from matplotlib import pyplot
 
 from image_types import is_dcm_file, is_mhd_file
 from load_data import X, Y, Z
-from load_data.ct_metadata import try_convert_to_number, attr_dir
+from load_data.processing_utils import try_convert_to_number, attr_dir
 
 Size = Tuple[X, Y, Z]
 Spacing = Tuple[X, Y, Z]

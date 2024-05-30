@@ -23,7 +23,8 @@ def main():
         'tasks.py',
         'image_types.py',
         'lib',
-        'data/plot_patches_in_batch.py',
+        'data/plot_patches.py',
+        'data/vertebrae.py',
     ]
 
     for p in copy_paths_relative:
