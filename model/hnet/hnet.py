@@ -79,7 +79,7 @@ MPS_TEMPLATE = '''
                     </Bounds>
                 </Geometry3D>
 {6}
-        
+
             </time_series>
         </point_set>
     </point_set_file>
