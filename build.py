@@ -15,6 +15,9 @@ def main():
     copy_paths_relative = [
         'model/fnet',
         'model/ensemble',
+        'model/hnet',
+        'model/pbl',
+        'model/hnet_fnet',
         'hiwi',
         'load_data',
         'tasks.py',
