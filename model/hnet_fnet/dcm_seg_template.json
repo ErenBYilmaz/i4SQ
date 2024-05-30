@@ -1,0 +1,37 @@
+{
+  "ContentCreatorName": null,
+  "ClinicalTrialSeriesID": null,
+  "ClinicalTrialTimePointID": null,
+  "SeriesDescription": "Segmentation",
+  "SeriesNumber": null,
+  "InstanceNumber": null,
+  "segmentAttributes": [
+    [
+      {
+        "labelID": 1,
+        "SegmentDescription": "Fracture Detection Outputs",
+        "SegmentAlgorithmType": "AUTOMATIC",
+        "SegmentAlgorithmName": "hNetfNetPipeline",
+        "SegmentedPropertyCategoryCodeSequence": {
+          "CodeValue": "123037004",
+          "CodingSchemeDesignator": "SCT",
+          "CodeMeaning": "Anatomical Structure"
+        },
+        "SegmentedPropertyTypeCodeSequence": {
+          "CodeValue": "51185008",
+          "CodingSchemeDesignator": "SCT",
+          "CodeMeaning": "Chest"
+        },
+        "recommendedDisplayRGBValue": [
+          177,
+          73,
+          33
+        ]
+      }
+    ]
+  ],
+  "ContentLabel": "SEGMENTATION",
+  "ContentDescription": "Fracture Detection Outputs",
+  "ClinicalTrialCoordinatingCenterName": null,
+  "BodyPartExamined": null
+}
