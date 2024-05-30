@@ -1,5 +1,4 @@
 from lib.util import listdir_fullpath
-from model.ensemble.fnet_ensemble import FNetEnsembleBuilder
 from model.fnet.fnet import FNet
 from model.hnet_fnet.hnet_fnet import HNetFNetPipeline
 from model.pbl.pbl import PBL
