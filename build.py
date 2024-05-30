@@ -20,9 +20,9 @@ def main():
         'tasks.py',
         'lib',
     ]
-    with open('.gitignore', 'w') as f:
-        extra_ignores = ['.gitignore', '__pycache__', '.idea', 'old']
-        f.write('\n'.join(copy_paths_relative + extra_ignores))
+    # with open('.gitignore', 'w') as f:
+    #     extra_ignores = ['.gitignore', '__pycache__', '.idea', 'old']
+    #     f.write('\n'.join(copy_paths_relative + extra_ignores))
 
     for p in copy_paths_relative:
         in_paths = [os.path.join(from_path, p) for from_path in copy_from_dirs]
