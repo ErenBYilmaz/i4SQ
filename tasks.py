@@ -691,6 +691,12 @@ class BinaryClassificationTask(VertebraClassificationTask, ABC):
     def loss_function(self):
         return dl_backend.b().binary_crossentropy_loss()
 
+    def positive_class_name(self):
+        return self.class_names()[1]
+
+    def negative_class_name(self):
+        return self.class_names()[0]
+
     def build_output_layers_tf(self, x: 'tensorflow.Tensor', **regularizers) -> 'tensorflow.Tensor':
         input_shape = x.shape.as_list()
         conv_layer_before = len(input_shape) == 5

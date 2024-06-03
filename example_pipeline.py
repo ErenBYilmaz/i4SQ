@@ -1,12 +1,12 @@
 import os
+from typing import Optional
 
-import SimpleITK
 import cachetools
-import numpy
 import streamlit
 
 import hiwi
 from dcm_to_nifti import dcm_to_nifti, metadata, read_spacing_from_nii
+from lib.main_wrapper import main_wrapper
 from lib.util import listdir_fullpath
 from model.fnet.fnet import FNet
 from model.hnet_fnet.hnet_fnet import HNetFNetPipeline
@@ -17,7 +17,7 @@ FNET_MODELS_PATH = r'./models/fnet'
 
 
 @cachetools.cached(cache=cachetools.LRUCache(maxsize=1))
-def pipeline() -> HNetFNetPipeline:
+def example_pipeline() -> HNetFNetPipeline:
     some_fnet_model = [p for p in listdir_fullpath(FNET_MODELS_PATH) if p.endswith('.h5')][0]
     return HNetFNetPipeline(
         hnet=PBL(
@@ -27,18 +27,20 @@ def pipeline() -> HNetFNetPipeline:
         ),
         fnet=FNet(
             model_path=some_fnet_model,
-        )
+        ),
+        results_subdir='uploads/results',
     )
 
 
-def run_pipeline_on_image_directory(patient_id, img_dir: str):
+def run_pipeline_on_image_directory(patient_id, img_dir: str, pipeline: HNetFNetPipeline) -> Optional[hiwi.Image]:
     filenames = listdir_fullpath(img_dir)
-    p = pipeline()
     file_extensions_present = set([os.path.splitext(f)[1] for f in filenames])
     if len(file_extensions_present) > 1:
         streamlit.write('Please upload files of the same type')
+        return None
     elif len(file_extensions_present) == 0:
         streamlit.write('Please upload at least one file')
+        return None
     else:
         ext = file_extensions_present.pop()
         nii_file_path: str
@@ -55,15 +57,23 @@ def run_pipeline_on_image_directory(patient_id, img_dir: str):
                          patient_id=patient_id)
         assert os.path.isfile(nii_file_path)
 
-
         print('Processing', nii_file_path)
         hiwi_image = hiwi.Image(path=nii_file_path)
-        hiwi_image['pbl_required_spacing'] = read_spacing_from_nii(nii_file_path)
+        hiwi_image['spacing'] = read_spacing_from_nii(nii_file_path)
         hiwi_image['base_dcm_path'] = os.path.dirname(nii_file_path)
         hiwi_image['patient_id'] = nii_file_path
         hiwi_image.objects = [hiwi.Object()]
 
-        p.predict_on_single_image(hiwi_image)
+        pipeline.predict_on_single_image(hiwi_image)
+
+        return hiwi_image
+
+
+@main_wrapper
+def main():
+    img = run_pipeline_on_image_directory('20240530_190948', 'uploads/20240530_190948', example_pipeline())
+    print('Done processing', img['patient_id'])
+
 
 if __name__ == '__main__':
-    run_pipeline_on_image_directory('20240530_190948', 'uploads/20240530_190948', )
+    main()

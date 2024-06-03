@@ -2,17 +2,18 @@ import json
 import os
 import re
 from subprocess import CalledProcessError
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import SimpleITK
 import numpy
+from matplotlib import pyplot
 
 from hiwi import Image
 from lib.call_tool import call_tool
 from model.hnet.hnet import HNet
 
 
-def parse_pbl_output(pbl_output):
+def parse_pbl_output(pbl_output) -> List[Dict[str, Union[str, int]]]:
     # pbl_output = re.search(r'Output of `.*'
     #                        + escaped_pbl_model_path
     #                        + r' .*'
@@ -52,12 +53,15 @@ class PBL(HNet):
         r.SetOutputOrigin(physical_origin)
         s_image = r.Execute(s_image)
         SimpleITK.WriteImage(s_image, spaced_path)
+        image_array = SimpleITK.GetArrayFromImage(s_image)
+        pyplot.imsave(spaced_path + '_sagittal_view.png', image_array[:, :, image_array.shape[2] // 2], cmap='gray')
 
     def predict_on_single_image(self, img: Image) -> dict:
         pbl_model_path = os.path.abspath(self.model_exe_path)
         input_path = str(img.path)
         spaced_path = input_path.replace('.nii.gz', '_spaced.nii.gz')
-        self.nii_to_pbl_spacing(input_path, spaced_path)
+        if not os.path.isfile(spaced_path):
+            self.nii_to_pbl_spacing(input_path, spaced_path)
 
         input_path = os.path.abspath(spaced_path)
         command = ["python", "-m", "pbl", "test", "--output-dir", "log/pbl-outputs", pbl_model_path, input_path]
@@ -76,7 +80,10 @@ class PBL(HNet):
                 tool_output = call_tool(command, force_cpu=True, cwd=os.path.abspath(os.path.dirname(os.path.dirname(tool))))
                 pbl_output_vertebrae = parse_pbl_output(tool_output)
                 print(pbl_output_vertebrae)
-                raise NotImplementedError('TODO write json in same format as hNet')
+                hnet_like_format = {v['name']: [{'pos': [v['x'], v['y'], v['z']]}]
+                                    for v in pbl_output_vertebrae}
+                with open(json_result_path, 'w') as f:
+                    json.dump(hnet_like_format, f)
         except CalledProcessError:
             print(CalledProcessError)
             print('Ignoring a failed process call and dumping empty json file..')

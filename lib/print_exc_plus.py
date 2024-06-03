@@ -176,22 +176,27 @@ def load_custom_picklers():
 
         # can't pickle thread-local data
         'from threading import local as unpicklable',
+        'from _thread import _local as unpicklable',
 
         # can't pickle generator objects
         'unpicklable = type(_ for _ in [])',
     ]:
-        try:
-            unpicklable = eval(f'exec("{unpicklable_type}") or unpicklable')
-        except ImportError:
-            pass
-        else:
-            register_unpicklable(unpicklable, also_subclasses=True)
-        finally:
-            unpicklable = None
+        try_register_unpicklable_from_string(unpicklable_type)
     fix_itk_builtin_pickling()
     fix_dill_builtin_module()
 
     loaded_custom_picklers = True
+
+
+def try_register_unpicklable_from_string(unpicklable_type_str):
+    try:
+        unpicklable = eval(f'exec("{unpicklable_type_str}") or unpicklable')
+    except ImportError:
+        pass
+    else:
+        register_unpicklable(unpicklable, also_subclasses=True)
+    finally:
+        unpicklable = None
 
 
 def fix_dill_builtin_module():

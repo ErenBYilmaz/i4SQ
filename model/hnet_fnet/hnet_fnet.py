@@ -16,6 +16,7 @@ from hiwi import ImageList, Image
 from lib.image_processing_tool import ImageProcessingPipeline
 from lib.main_wrapper import main_wrapper
 from lib.my_logger import logging
+from lib.print_exc_plus import try_register_unpicklable_from_string
 from load_data import VERTEBRAE
 from model.fnet.evaluate import FNetParameterEvaluator
 from model.fnet.fnet import FNet
@@ -169,8 +170,14 @@ class MaskCreator:
             dill.dump(s_img, f)
         with open(os.path.join(base_path, 'input_img.dill'), 'wb') as f:
             dill.dump(self.img, f)
-        with open(os.path.join(base_path, 'pipeline.dill'), 'wb') as f:
-            dill.dump(self.pipeline, f)
+        try:
+            with open(os.path.join(base_path, 'pipeline.dill'), 'wb') as f:
+                dill.dump(self.pipeline, f)
+        except TypeError as e:
+            if "can't pickle" in str(e):
+                pass
+            else:
+                raise
 
     def plot_using_pyplot(self, s_img, tmp_mask_path):
         a = SimpleITK.GetArrayFromImage(s_img)
