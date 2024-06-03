@@ -34,7 +34,8 @@ def example_pipeline() -> HNetFNetPipeline:
 
 def run_pipeline_on_image_directory(patient_id, img_dir: str, pipeline: HNetFNetPipeline) -> Optional[hiwi.Image]:
     filenames = listdir_fullpath(img_dir)
-    file_extensions_present = set([os.path.splitext(f)[1] for f in filenames])
+    possible_extensions = {'.nii.gz', '.dcm'}
+    file_extensions_present = set([e for f in filenames for e in possible_extensions if f.endswith(e)])
     if len(file_extensions_present) > 1:
         streamlit.write('Please upload files of the same type')
         return None
@@ -47,7 +48,7 @@ def run_pipeline_on_image_directory(patient_id, img_dir: str, pipeline: HNetFNet
         if ext == '.nii.gz':
             if len(filenames) > 1:
                 streamlit.write('Please upload only one nii.gz file at a time')
-            nii_file_path = os.path.join(img_dir, filenames[0])
+            nii_file_path = filenames[0]
         else:
             assert ext == '.dcm'
             nii_file_path = os.path.join('uploads', 'results', f'{patient_id}.nii.gz')
