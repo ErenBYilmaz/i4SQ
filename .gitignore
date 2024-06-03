@@ -7,3 +7,4 @@ uploads
 .cache
 *.pstat
 models/log
+*.dill
