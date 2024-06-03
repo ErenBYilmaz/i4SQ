@@ -24,8 +24,8 @@ if uploaded_files:
         filename = uploaded_file.name
         with open(os.path.join(img_dir, filename), 'wb') as f:
             f.write(bytes_data)
-        streamlit.write("filename:", uploaded_file.name)
-        streamlit.write(len(bytes_data), "bytes")
+        # streamlit.write("filename:", uploaded_file.name)
+        # streamlit.write(len(bytes_data), "bytes")
     p = example_pipeline()
     img = run_pipeline_on_image_directory(patient_id, img_dir, p)
     if img:
